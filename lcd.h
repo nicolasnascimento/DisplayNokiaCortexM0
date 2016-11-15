@@ -1,6 +1,7 @@
 #ifndef LCD_H
 #define LCD_H
 
+
 /*
   Commands and Color specification codes (Epson S1D15G00)
   Author: Nicolas Nascimento (nicolas.nascimento@acad.pucrs.br)
@@ -18,7 +19,7 @@
 #define CASET   0x15      // Column address set
 #define DATCTL  0xBC      // Data scan direction, etc.
 #define RGSSET8 0xCE      // 256-color position set
-#define RAMWR   0x5c      // Writing to memory
+#define RAMWR   0x5C      // Writing to memory
 #define RAMRD   0x5D      // Reading fomr memory
 #define PTLIN   0xA8      // Partial display in
 #define PTLOUT  0xA9      // Partial display out
@@ -74,6 +75,8 @@
 #define SPI_SR_TXEMPTY
 #define LCD_RESET_LOW   GPIOA->BRR = BIT(0)
 #define LCD_RESET_HIGH  GPIOA->BRR = BIT(0)
+
+
 
 
 #endif // LCD_H

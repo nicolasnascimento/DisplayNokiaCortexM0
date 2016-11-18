@@ -38,6 +38,7 @@ void write_spi_command(volatile unsigned int command) {
 
 void write_spi_data(volatile unsigned int data) {
   // TODO
+
 }
 
 void backlight(unsigned char state) {

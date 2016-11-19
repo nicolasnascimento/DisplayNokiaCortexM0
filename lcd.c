@@ -11,6 +11,8 @@ const unsigned char FONT8x8[FONT_VEC_WIDTH][FONT_VEC_HEIGHT];
 const unsigned char FONT8x16[FONT_VEC_WIDTH][FONT_VEC_HEGHT2];
 
 
+// Header Definitions
+void init_spi(void);
 void init_lcd(void);
 void backlight(unsigned char state);
 void write_spi_command(unsigned int command);
@@ -25,11 +27,14 @@ void lcd_put_char(char c, int x, int y, int size, int fcolor, int bcolor);
 void lcd_put_string(char* string, const char *fstyle, unsigned char x, unsigned char y, unsigned char fcolor, unsigned char bcolor);
 void delay(unsigned long d);
 
-//
-
+/*
+  
+*/
 
 void init_spi(void) {
   // TODO
+
+
 }
 
 void write_spi_command(volatile unsigned int command) {

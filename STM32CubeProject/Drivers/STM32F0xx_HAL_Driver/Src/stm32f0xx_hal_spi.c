@@ -53,9 +53,9 @@
       (#) When the SPI DMA Pause/Stop features are used, we must use the following APIs
           the HAL_SPI_DMAPause()/ HAL_SPI_DMAStop() only under the SPI callbacks
 
-      @note                                                                                     
+      @note
        (#) TX/RX processes are HAL_SPI_TransmitReceive(), HAL_SPI_TransmitReceive_IT() and HAL_SPI_TransmitReceive_DMA()
-       (#) RX processes are HAL_SPI_Receive(), HAL_SPI_Receive_IT() and HAL_SPI_Receive_DMA()   
+       (#) RX processes are HAL_SPI_Receive(), HAL_SPI_Receive_IT() and HAL_SPI_Receive_DMA()
        (#) TX processes are HAL_SPI_Transmit(), HAL_SPI_Transmit_IT() and HAL_SPI_Transmit_DMA()
 
   @endverbatim
@@ -93,18 +93,18 @@
   Additional Table:
 
     Using the HAL it is not possible to reach all supported SPI frequency with the differents
-    the following table resume the max SPI frequency reached with data size 8bits/16bits,    
-    according to frequency used on APBx Peripheral Clock (fPCLK) used by the SPI instance :  
+    the following table resume the max SPI frequency reached with data size 8bits/16bits,
+    according to frequency used on APBx Peripheral Clock (fPCLK) used by the SPI instance :
       +-----------------------------------------------------------------------------------------
-      |         |                | 2Lines Fullduplex   |     2Lines RxOnly   |        1Line     
+      |         |                | 2Lines Fullduplex   |     2Lines RxOnly   |        1Line
       | Process | Tranfert mode  |---------------------|---------------------|------------------
       |         |                |  Master  |  Slave   |  Master  |  Slave   |  Master  |  Slave
       |=========================================================================================
-      |    T    |     Polling    | fPCLK/32 | fPCLK/32 |    NA    |    NA    |    NA    |   NA  
+      |    T    |     Polling    | fPCLK/32 | fPCLK/32 |    NA    |    NA    |    NA    |   NA
       |    X    |----------------|----------|----------|----------|----------|----------|-------
-      |    /    |     Interrupt  | fPCLK/32 | fPCLK/32 |    NA    |    NA    |    NA    |   NA  
+      |    /    |     Interrupt  | fPCLK/32 | fPCLK/32 |    NA    |    NA    |    NA    |   NA
       |    R    |----------------|----------|----------|----------|----------|----------|-------
-      |    X    |       DMA      | fPCLK/32 | fPCLK/16 |    NA    |    NA    |    NA    |   NA  
+      |    X    |       DMA      | fPCLK/32 | fPCLK/16 |    NA    |    NA    |    NA    |   NA
       |=========|================|==========|==========|==========|==========|==========|=======
       |         |     Polling    | fPCLK/32 | fPCLK/16 | fPCLK/16 | fPCLK/16 | fPCLK/16 | fPCLK/
       |         |----------------|----------|----------|----------|----------|----------|-------
@@ -320,10 +320,10 @@ HAL_StatusTypeDef HAL_SPI_Init(SPI_HandleTypeDef *hspi)
   /*---------------------------- SPIx CRCPOLY Configuration --------------------*/
   /* Configure : CRC Polynomial */
   hspi->Instance->CRCPR = hspi->Init.CRCPolynomial;
-  
+
   /* Activate the SPI mode (Make sure that I2SMOD bit in I2SCFGR register is reset) */
   hspi->Instance->I2SCFGR &= (uint16_t)(~SPI_I2SCFGR_I2SMOD);
-  
+
   hspi->ErrorCode = HAL_SPI_ERROR_NONE;
   hspi->State= HAL_SPI_STATE_READY;
 
@@ -559,7 +559,7 @@ HAL_StatusTypeDef HAL_SPI_Transmit(SPI_HandleTypeDef *hspi, uint8_t *pData, uint
   {
     hspi->ErrorCode = HAL_SPI_ERROR_FLAG;
   }
-  
+
   /* Clear overrun flag in 2 Lines communication mode because received is not read */
   if(hspi->Init.Direction == SPI_DIRECTION_2LINES)
   {
@@ -766,7 +766,7 @@ HAL_StatusTypeDef HAL_SPI_Receive(SPI_HandleTypeDef *hspi, uint8_t *pData, uint1
       }
     }
   }
-  
+
   /* Check the end of the transaction */
   if(SPI_EndRxTransaction(hspi,Timeout) != HAL_OK)
   {
@@ -1061,7 +1061,7 @@ HAL_StatusTypeDef HAL_SPI_Transmit_IT(SPI_HandleTypeDef *hspi, uint8_t *pData, u
   hspi->RxXferSize  = 0;
   hspi->RxXferCount = 0;
   hspi->RxISR = NULL;
-  
+
   /* Set the function for IT treatment */
   if(hspi->Init.DataSize > SPI_DATASIZE_8BIT )
   {
@@ -2115,7 +2115,7 @@ static void SPI_DMATransmitReceiveCplt(DMA_HandleTypeDef *hdma)
     {
       hspi->ErrorCode = HAL_SPI_ERROR_FLAG;
     }
-  
+
     /* Disable Rx/Tx DMA Request */
     CLEAR_BIT(hspi->Instance->CR2, SPI_CR2_TXDMAEN | SPI_CR2_RXDMAEN);
 
@@ -2210,7 +2210,7 @@ static void SPI_2linesRxISR_8BIT(struct __SPI_HandleTypeDef *hspi)
     *((uint16_t*)hspi->pRxBuffPtr) = hspi->Instance->DR;
     hspi->pRxBuffPtr += sizeof(uint16_t);
     hspi->RxXferCount -= 2;
-    if(hspi->RxXferCount == 1) 
+    if(hspi->RxXferCount == 1)
     {
       /* set fiforxthresold according the reception data length: 8bit */
       SET_BIT(hspi->Instance->CR2, SPI_RXFIFO_THRESHOLD);
@@ -2660,7 +2660,7 @@ static HAL_StatusTypeDef SPI_EndRxTransaction(SPI_HandleTypeDef *hspi,  uint32_t
     /* Disable SPI peripheral */
     __HAL_SPI_DISABLE(hspi);
   }
-  
+
   /* Control the BSY flag */
   if(SPI_WaitFlagStateUntilTimeout(hspi, SPI_FLAG_BSY, RESET, Timeout) != HAL_OK)
   {

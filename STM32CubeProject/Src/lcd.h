@@ -77,6 +77,4 @@
 #define LCD_RESET_HIGH  GPIOA->BRR = BIT(0)
 
 
-
-
 #endif // LCD_H

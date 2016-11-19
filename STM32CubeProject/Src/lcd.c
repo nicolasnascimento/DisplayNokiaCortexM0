@@ -25,20 +25,17 @@ void lcd_set_rect(int x0, int y0, int x1, int y1, unsigned char fill, int color)
 void lcd_set_circle(int x0, int y0, int radius, int color);
 void lcd_put_char(char c, int x, int y, int size, int fcolor, int bcolor);
 void lcd_put_string(char* string, const char *fstyle, unsigned char x, unsigned char y, unsigned char fcolor, unsigned char bcolor);
-void delay(unsigned long d);
 
-/*
-  
-*/
 
 void init_spi(void) {
-  // TODO
-
-
+  /*
+    STM32CubeMX will perform the initialization of the pins, so no need to manually set anything
+  */
 }
 
 void write_spi_command(volatile unsigned int command) {
   // TODO
+
 }
 
 void write_spi_data(volatile unsigned int data) {
@@ -84,10 +81,6 @@ void lcd_put_char(char c, int x, int y, int size, int fcolor, int bcolor) {
 
 void lcd_put_str(char* string, int x, int y, int size, int fcolor, int bcolor) {
   // TODO
-}
-
-void delay(unsigned long a) {
-  while(--a!= 0);
 }
 
 const unsigned char FONT6x8[FONT_VEC_WIDTH][FONT_VEC_HEIGHT] = {

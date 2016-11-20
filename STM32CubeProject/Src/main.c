@@ -675,7 +675,7 @@ int main(void)
 
   lcd_clear_screen();
   HAL_Delay(10);
-  lcd_put_str("This shit is working", 65, 65, MEDIUM, BLACK, WHITE);
+  lcd_put_str("This thing is working", 65, 65, MEDIUM, BLACK, WHITE);
   HAL_Delay(10);
 
   /* USER CODE END 2 */

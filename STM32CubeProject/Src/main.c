@@ -490,13 +490,15 @@ void lcd_set_rect(int x0, int y0, int x1, int y1, unsigned char fill, int color)
   int i;
   // check if the rectangle is to be filled
   if (fill == FILL) {
-    // best way to create a filled rectangle is to define a drawing box // and loop two pixels at a time
+    // best way to create a filled rectangle is to define a drawing box
+    // and loop two pixels at a time
     // calculate the min and max for x and y directions
     xmin = (x0 <= x1) ? x0 : x1;
     xmax = (x0 > x1) ? x0 : x1;
     ymin = (y0 <= y1) ? y0 : y1;
     ymax = (y0 > y1) ? y0 : y1;
-    // specify the controller drawing box according to those limits // Row address set (command 0x2B)
+    // specify the controller drawing box according to those limits
+    // Row address set (command 0x2B)
     write_spi_command(PASET);
     write_spi_data(xmin);
     write_spi_data(xmax);
@@ -570,7 +572,8 @@ void lcd_put_char(char c, int x, int y, int size, int fcolor, int bcolor) {
   unsigned char *pChar;
   unsigned char *FontTable[] = {(unsigned char *)FONT6x8, (unsigned char *)FONT8x8, (unsigned char *)FONT8x16};
 
-  // get pointer to the beginning of the selected font table pFont = (unsigned char *)FontTable[size];
+  // get pointer to the beginning of the selected font table
+  pFont = (unsigned char *)FontTable[size];
   // get the nColumns, nRows and nBytes
   nCols = *pFont;
   nRows = *(pFont + 1);

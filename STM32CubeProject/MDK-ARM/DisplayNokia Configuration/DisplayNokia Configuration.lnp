@@ -1,0 +1,22 @@
+--cpu Cortex-M0
+"displaynokia configuration\system_stm32f0xx.o"
+"displaynokia configuration\stm32f0xx_hal_rcc_ex.o"
+"displaynokia configuration\stm32f0xx_hal_flash_ex.o"
+"displaynokia configuration\stm32f0xx_hal_cortex.o"
+"displaynokia configuration\stm32f0xx_hal_pwr_ex.o"
+"displaynokia configuration\stm32f0xx_hal_gpio.o"
+"displaynokia configuration\stm32f0xx_hal_uart.o"
+"displaynokia configuration\stm32f0xx_hal_dma.o"
+"displaynokia configuration\stm32f0xx_hal_rcc.o"
+"displaynokia configuration\stm32f0xx_hal_pwr.o"
+"displaynokia configuration\stm32f0xx_hal_flash.o"
+"displaynokia configuration\stm32f0xx_hal_uart_ex.o"
+"displaynokia configuration\stm32f0xx_hal.o"
+"displaynokia configuration\stm32f0xx_hal_msp.o"
+"displaynokia configuration\stm32f0xx_it.o"
+"displaynokia configuration\main.o"
+"displaynokia configuration\startup_stm32f072xb.o"
+--library_type=microlib --strict --scatter "DisplayNokia Configuration\DisplayNokia Configuration.sct"
+--diag_suppress=L6329 --summary_stderr --info summarysizes --map --xref --callgraph --symbols
+--info sizes --info totals --info unused --info veneers
+--list "DisplayNokia Configuration.map" -o "DisplayNokia Configuration\DisplayNokia Configuration.axf"

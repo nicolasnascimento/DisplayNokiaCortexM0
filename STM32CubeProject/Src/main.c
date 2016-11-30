@@ -32,20 +32,108 @@
   */
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f0xx_hal.h"
-#include "spi.h"
-#include "usart.h"
-#include "gpio.h"
 
 /* USER CODE BEGIN Includes */
 
-#include "lcd.h"
+#include <string.h>
 
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
+UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
+
+/*
+  Commands and Color specification codes (Epson S1D15G00)
+  Author: Nicolas Nascimento (nicolas.nascimento@acad.pucrs.br)
+*/
+
+#define NOP   			0x00   		// NOP
+#define SWRESET  		0x01      // Software reset
+#define BSTROFF  		0x02      // Booster Voltage Off
+#define BSTRON  		0x03      // Booster Voltage On
+#define RDDIDIF  		0x04      // Read display identification
+#define RDDST  			0x09      // Read display status
+#define SLEEPIN   	0x10      // Sleep in
+#define SLEEPOUT  	0x11      // Sleep out
+#define PTLON   		0x12      // Partial display mode
+#define NORON   		0x13      // Display normal mode
+#define INVOFF  		0x20      // Inversion off
+#define INVON 			0x21      // Inversion on
+#define DALO   			0x22      // All pixel off
+#define DAL   			0x23      // All pixel on
+#define SETCON   		0x25      // Write contrast
+#define DISPOFF  		0x28      // Display off
+#define DISPON   		0x29      // Display on
+#define CASET  			0x2A      // Column address set
+#define PASET  			0x2B      // Page address set
+#define RAMWR 			0x2C      // Memory write
+#define RGBSET   		0x2D      // Color set
+#define PTLAR  			0x30      // Partial area
+#define VSCRDEF  		0x33      // Vertical scrolling definition
+#define TEOFF  			0x34      // Test mode
+#define TEON   			0x35      // Test mode
+#define MADCTL 			0x36      // Memory access control
+#define SEP  				0x37      // Vertical scrolling start address
+#define IDMOFF  		0x38      // Idle mode off
+#define IDMON  			0x39      // Idle mode on
+#define COLMOD   		0x3A      // Interface pixel format
+#define SETVOP   		0xB0      // Set vop
+#define BRS 				0xB4      // Bottom row swap
+#define TRS 				0xB6      // Top row swap
+#define DISCTR     	0xB9      // Display control
+#define DOR     		0xBA      // Data order
+#define TCDFE     	0xBD      // Enable/Disable DF Temperature compensation
+#define TCVOPE     	0xBF      // Enable/Disable VOP Temp. comp
+#define EC     			0xC0      // Internal or external oscilator
+#define SETMUL     	0xC2      // Set multiplication factor
+#define TCVOPAB     0xC3      // Set TCVOP Slopes A and B
+#define TCVOPCD     0xC4      // Set TCVOP Slopes C and D
+#define TCDF     		0xC5      // Set divider frequency
+#define DF8COLOR    0xC6      // Set divider frequency 8-color mode
+#define SETBS     	0xC7      // Set bias system
+#define RDTEMP     	0xC8      // Temperature read back
+#define NLI 				0xC9			// N-line inversion
+#define RDID1 			0xDA			// Read ID1
+#define RDID2 			0xDB			// Read ID2
+#define RDID3 			0xDC			// Read ID3
+
+// Backlight
+#define BKLGHT_LCD_ON   1
+#define BKLGHT_LCD_OFF  2
+
+// Booleans
+#define NOFILL          0
+#define FILL            1
+
+// 12-bit color definitions
+#define WHITE           0xFFF
+#define BLACK           0x000
+#define RED             0xF00
+#define GREEN           0x0F0
+#define BLUE            0x00F
+#define CYAN            0x0FF
+#define MAGENTA         0xF0F
+#define YELLOW          0xFF0
+#define BROWN           0xB22
+#define ORANGE          0xFA0
+#define PINK            0xF6A
+
+// Font sizes
+#define SMALL           0
+#define MEDIUM          1
+#define LARGE           2
+
+// Bit definition
+#define BIT(N) (1<<N)
+
+// Hardware definitions
+#define SPI_SR_TXEMPTY
+#define LCD_RESET_LOW   (GPIOA->BRR = BIT(0))
+#define LCD_RESET_HIGH  (GPIOA->BSRR = BIT(0))
+
 
 const unsigned char FONT6x8[97][8] = {
 0x06,0x08,0x08,0x00,0x00,0x00,0x00,0x00,            // Columns, rows, num_bytes_per_char
@@ -350,21 +438,76 @@ const unsigned char FONT8x16[97][16] = {
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
-void Error_Handler(void);
+static void MX_GPIO_Init(void);
+static void MX_USART2_UART_Init(void);
 
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
 
-void write_spi_command(volatile unsigned int command) {
-  // clear bit 8 - indicates a "command"
-  command = (command & ~0x0100);
-  HAL_SPI_Transmit_IT(&hspi1, &command, SPI_DATASIZE_9BIT);
+
+void uart_put_str(char* string) {
+	char string_to_s[strlen(string) + 1];
+	strcpy(string_to_s, string);
+	strcat(string_to_s, "\n");
+	HAL_UART_Transmit(&huart2, (uint8_t*)string_to_s, strlen(string_to_s), 1000);
+	HAL_Delay(50);
 }
 
-void write_spi_data(volatile unsigned int data) {
+void write_spi(uint32_t data) {
+	
+	int i;
+	uint32_t mask = 0x100;
+  GPIOB->BRR = BIT(0); // CS = 0
+	GPIOA->BSRR = BIT(5); // LED = 1
+	__NOP();
+	__NOP();
+	__NOP();
+	__NOP();
+	__NOP();
+	
+  GPIOA->BRR = BIT(4); // SCLK = 0
+	do {
+    if(data & mask) GPIOA->BSRR = BIT(1);
+		else GPIOA->BRR = BIT(1);
+		
+		__NOP();
+		__NOP();
+		__NOP();
+		__NOP();
+		__NOP();
+    GPIOA->BSRR = BIT(4); // SCLK = 1
+		
+    __NOP();
+		__NOP();
+		__NOP();
+		__NOP();
+		__NOP();
+    GPIOA->BRR = BIT(4); // SCLK = 0
+		
+    mask >>= 1;
+	}while(mask != 0);
+	
+	GPIOB->BSRR = BIT(0); // CS = 1
+	GPIOA->BRR = BIT(5); // LED = 0
+	
+	__NOP();
+	__NOP();
+	__NOP();
+	__NOP();
+	__NOP();
+	__NOP();
+}
+
+void write_spi_command(uint32_t command) {
+  // clear bit 8 - indicates a "command"
+  command = (command & ~0x0100);
+	write_spi(command);
+}
+
+void write_spi_data(uint32_t data) {
   // set bit 8 - indicating a "command"
   data = (data | 0x0100);
-  HAL_SPI_Transmit_IT(&hspi1, &command, SPI_DATASIZE_9BIT);
+	write_spi(data);
 }
 
 void backlight(unsigned char state) {
@@ -373,26 +516,33 @@ void backlight(unsigned char state) {
 }
 
 void init_lcd(void) {
+	
   // Hardware reset
   LCD_RESET_LOW;
-  HAL_Delay(1);
+  HAL_Delay(10);
   LCD_RESET_HIGH;
-  HAL_Delay(1);
+  HAL_Delay(10);
+	
+	uart_put_str("init_lcd");
+	
   // Display control
-  write_spi_command(DISCTL);
-  write_spi_data(0x00); // P1: 0x00 = 2 divisions, switching period=8 (default) WriteSpiData(0x20); // P2: 0x20 = nlines/4 - 1 = 132/4 - 1 = 32) WriteSpiData(0x00); // P3: 0x00 = no inversely highlighted lines
-  // COM scan
-  write_spi_command(COMSCN);
-  write_spi_data(1);
-  // Internal oscilator ON
-  write_spi_command(OSCON);
-  // Sleep out
-  write_spi_command(SLPOUT);
-  // Power control
-  write_spi_command(PWRCTR);
-  write_spi_data(0x0f);   //
-  // Inverse display
-  write_spi_command(DISINV);
+  write_spi_command(SLEEPOUT);
+  
+	write_spi_command(INVON);
+	
+	write_spi_command(COLMOD);
+	write_spi_data(0x03);
+	
+	write_spi_command(MADCTL);
+	write_spi_data(0xC8);
+	
+	write_spi_command(SETCON);
+	write_spi_data(0x30);
+
+
+	HAL_Delay(10);
+	
+	write_spi_command(DISPON);
 }
 
 
@@ -404,6 +554,9 @@ void lcd_write_130_130_bmp(void) {
 
 void lcd_clear_screen(void) {
   long i;
+	
+	uart_put_str("lcd_clear_screen");
+	
   // Row address set  (command 0x2B)
   write_spi_command(PASET);
   write_spi_data(0);
@@ -423,6 +576,7 @@ void lcd_clear_screen(void) {
 }
 
 void lcd_set_pixel(int x, int y, int color) {
+	
   // Row address set  (command 0x2B)
   write_spi_command(PASET);
   write_spi_data(x);
@@ -604,15 +758,15 @@ void lcd_put_char(char c, int x, int y, int size, int fcolor, int bcolor) {
       // if pixel bit set, use foreground color; else use the background color
       // now get the pixel color for two successive pixels
       if((PixelRow & Mask) == 0) {
-        Word0 = bColor;
+        Word0 = bcolor;
       } else {
-        Word0 = fColor;
+        Word0 = fcolor;
       }
       Mask = Mask >> 1;
       if ((PixelRow & Mask) == 0) {
-        Word1 = bColor;
+        Word1 = bcolor;
       } else {
-        Word1 = fColor;
+        Word1 = fcolor;
       }
       Mask = Mask >> 1;
       // use this information to output three data bytes
@@ -625,9 +779,9 @@ void lcd_put_char(char c, int x, int y, int size, int fcolor, int bcolor) {
 
 void lcd_put_str(char* string, int x, int y, int size, int fcolor, int bcolor) {
   // loop until null-terminator is seen
-  while (*pString != 0x00) {
+  while (*string != 0x00) {
     // draw the character
-    lcd_put_char(*pString++, x, y, size, fColor, bColor);
+    lcd_put_char(*string++, x, y, size, fcolor, bcolor);
     // advance the y position
     if (size == SMALL) {
       y = y + 6;
@@ -641,7 +795,6 @@ void lcd_put_str(char* string, int x, int y, int size, int fcolor, int bcolor) {
   }
 }
 
-
 /* USER CODE END PFP */
 
 /* USER CODE BEGIN 0 */
@@ -652,9 +805,6 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-
-  init_spi();
-  init_lcd();
 
   /* USER CODE END 1 */
 
@@ -668,16 +818,17 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
-  MX_SPI1_Init();
-  MX_USART4_UART_Init();
+  MX_USART2_UART_Init();
 
   /* USER CODE BEGIN 2 */
-
+	
+	init_lcd();
+	HAL_Delay(1000);
   lcd_clear_screen();
-  HAL_Delay(10);
-  lcd_put_str("This thing is working", 65, 65, MEDIUM, BLACK, WHITE);
-  HAL_Delay(10);
+	HAL_Delay(1000);
+	lcd_set_circle(50, 50, 10, WHITE);
 
+	
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -700,6 +851,7 @@ void SystemClock_Config(void)
 
   RCC_OscInitTypeDef RCC_OscInitStruct;
   RCC_ClkInitTypeDef RCC_ClkInitStruct;
+  RCC_PeriphCLKInitTypeDef PeriphClkInit;
 
   RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
   RCC_OscInitStruct.HSIState = RCC_HSI_ON;
@@ -708,20 +860,17 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI;
   RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL12;
   RCC_OscInitStruct.PLL.PREDIV = RCC_PREDIV_DIV2;
-  if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
-  {
-    Error_Handler();
-  }
+  HAL_RCC_OscConfig(&RCC_OscInitStruct);
 
-  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
-                              |RCC_CLOCKTYPE_PCLK1;
+  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_SYSCLK;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_1) != HAL_OK)
-  {
-    Error_Handler();
-  }
+  HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_1);
+
+  PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_USART2;
+  PeriphClkInit.Usart2ClockSelection = RCC_USART2CLKSOURCE_PCLK1;
+  HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit);
 
   HAL_SYSTICK_Config(HAL_RCC_GetHCLKFreq()/1000);
 
@@ -731,24 +880,67 @@ void SystemClock_Config(void)
   HAL_NVIC_SetPriority(SysTick_IRQn, 0, 0);
 }
 
+/* USART2 init function */
+void MX_USART2_UART_Init(void)
+{
+
+  huart2.Instance = USART2;
+  huart2.Init.BaudRate = 38400;
+  huart2.Init.WordLength = UART_WORDLENGTH_8B;
+  huart2.Init.StopBits = UART_STOPBITS_1;
+  huart2.Init.Parity = UART_PARITY_NONE;
+  huart2.Init.Mode = UART_MODE_TX_RX;
+  huart2.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart2.Init.OverSampling = UART_OVERSAMPLING_16;
+  huart2.Init.OneBitSampling = UART_ONEBIT_SAMPLING_DISABLED ;
+  huart2.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
+  HAL_UART_Init(&huart2);
+
+}
+
+/** Configure pins as 
+        * Analog 
+        * Input 
+        * Output
+        * EVENT_OUT
+        * EXTI
+*/
+void MX_GPIO_Init(void)
+{
+
+  GPIO_InitTypeDef GPIO_InitStruct;
+
+  /* GPIO Ports Clock Enable */
+  __GPIOC_CLK_ENABLE();
+  __GPIOF_CLK_ENABLE();
+  __GPIOA_CLK_ENABLE();
+  __GPIOB_CLK_ENABLE();
+
+  /*Configure GPIO pin : B1_Pin */
+  GPIO_InitStruct.Pin = B1_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_EVT_RISING;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(B1_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : PA0 PA1 PA4 LD2_Pin */
+  GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_4|LD2_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_LOW;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : PB0 PB4 */
+  GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_4;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_LOW;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+}
+
 /* USER CODE BEGIN 4 */
 
 /* USER CODE END 4 */
-
-/**
-  * @brief  This function is executed in case of error occurrence.
-  * @param  None
-  * @retval None
-  */
-void Error_Handler(void)
-{
-  /* USER CODE BEGIN Error_Handler */
-  /* User can add his own implementation to report the HAL error return state */
-  while(1)
-  {
-  }
-  /* USER CODE END Error_Handler */
-}
 
 #ifdef USE_FULL_ASSERT
 
@@ -772,10 +964,10 @@ void assert_failed(uint8_t* file, uint32_t line)
 
 /**
   * @}
-  */
+  */ 
 
 /**
   * @}
-*/
+*/ 
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
